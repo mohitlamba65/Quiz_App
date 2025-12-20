@@ -78,7 +78,66 @@ export const getQuizByLink = async (req, res) => {
     }
 };
 
-// ... existing code ...
+// Get all quizzes created by the admin
+export const getMyQuizzes = async (req, res) => {
+    try {
+        const quizzes = await QuizModel.find({ createdBy: req.user.userId })
+            .sort({ createdAt: -1 })
+            .select('-questions.answer'); // Don't send answers
+
+        res.status(200).json({ quizzes });
+    } catch (error) {
+        console.error("Get my quizzes error:", error);
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// Get all active quizzes (for students)
+export const getAllQuizzes = async (req, res) => {
+    try {
+        const quizzes = await QuizModel.find({ isActive: true })
+            .populate('createdBy', 'username')
+            .sort({ createdAt: -1 })
+            .select('title description category shareableLink createdAt timeLimit passingScore');
+
+        res.status(200).json({ quizzes });
+    } catch (error) {
+        console.error("Get all quizzes error:", error);
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// Update quiz (Admin only)
+export const updateQuiz = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const updates = req.body;
+
+        // Find quiz and check ownership
+        const quiz = await QuizModel.findOne({
+            _id: id,
+            createdBy: req.user.userId
+        });
+
+        if (!quiz) {
+            return res.status(404).json({
+                message: "Quiz not found or you don't have permission to edit it"
+            });
+        }
+
+        // Update quiz
+        Object.assign(quiz, updates);
+        await quiz.save();
+
+        res.status(200).json({
+            message: "Quiz updated successfully",
+            quiz
+        });
+    } catch (error) {
+        console.error("Update quiz error:", error);
+        res.status(500).json({ message: error.message });
+    }
+};
 
 // Delete quiz (Admin only)
 export const deleteQuiz = async (req, res) => {
