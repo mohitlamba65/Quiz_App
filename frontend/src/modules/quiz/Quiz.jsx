@@ -2,43 +2,51 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Question } from "./Question";
 import { useUser } from "../user/User";
+import { useAuth } from "../auth/AuthContext";
 import { Timer } from "lucide-react";
 import axios from "axios";
 
 export const Quiz = () => {
-  const { category } = useParams();
+  const { category, link } = useParams();
   const [currInd, setInd] = useState(0);
   const [quizData, setQuizData] = useState([]);
+  const [quizInfo, setQuizInfo] = useState(null);
   const [timeLeft, setTimeLeft] = useState(0);
   const navigate = useNavigate();
   const { userAnswers, updateUserAnswers, userData, updateUserData } = useUser();
+  const { user } = useAuth(); // Get authenticated user
 
- useEffect(() => {
-  async function fetchData() {
-    try {
-      const response = await fetch(import.meta.env.VITE_QUESTIONS_URL);
-      const result = await response.json();
-      
-      console.log("All questions received:", result);
-      console.log("Total questions:", result.length);
-      console.log("Categories in data:", [...new Set(result.map(q => q.category))]);
-      console.log("Looking for category:", category);
-      
-      const categoryData = result.filter((item) =>
-        item.category?.toLowerCase() === category?.toLowerCase()
-      );
-      
-      console.log("Filtered questions for category:", categoryData);
-      console.log("Filtered questions count:", categoryData.length);
-      
-      setQuizData(categoryData);
-      setTimeLeft(categoryData.length * 60);
-    } catch (error) {
-      console.error("Error fetching data:", error);
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4444';
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        // New link-based quiz access
+        if (link) {
+          const response = await axios.get(`${API_URL}/quiz/link/${link}`);
+          const quiz = response.data.quiz;
+          setQuizInfo(quiz);
+          setQuizData(quiz.questions);
+          setTimeLeft(quiz.timeLimit);
+        }
+        // Legacy category-based access
+        else if (category) {
+          const response = await fetch(import.meta.env.VITE_QUESTIONS_URL);
+          const result = await response.json();
+
+          const categoryData = result.filter((item) =>
+            item.category?.toLowerCase() === category?.toLowerCase()
+          );
+
+          setQuizData(categoryData);
+          setTimeLeft(categoryData.length * 60);
+        }
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
     }
-  }
-  fetchData();
-}, [category]);
+    fetchData();
+  }, [category, link]);
 
   useEffect(() => {
     if (quizData.length === 0) return;
@@ -83,7 +91,7 @@ export const Quiz = () => {
 
     const userResultData = {
       ...userData,
-      category,
+      category: quizInfo?.category || category || 'General',
       attempts: attemptedCount,
       score: Math.max(0, score),
       totalQuestions: quizData.length,
@@ -95,15 +103,26 @@ export const Quiz = () => {
     updateUserData(userResultData);
 
     try {
-      await axios.post(import.meta.env.VITE_SAVE_URL, {
-        username: userData.username || "Anonymous",
+      const resultPayload = {
+        username: user?.username || userData.username || "Anonymous",
         score: userResultData.score,
         attempts: userResultData.attempts,
         status: userResultData.status,
-        category,
-      });
+        category: userResultData.category,
+        correctAnswers: correctCount,
+        incorrectAnswers: attemptedCount - correctCount,
+        totalQuestions: quizData.length,
+        quizId: quizInfo?._id || null,
+        userId: user?._id || null // Use authenticated user ID
+      };
+
+      console.log('Saving result:', resultPayload); // Debug log
+
+      const response = await axios.post(`${API_URL}/result`, resultPayload);
+      console.log('Result saved successfully:', response.data);
     } catch (error) {
       console.error("Error saving result:", error.message);
+      console.error("Error details:", error.response?.data);
     }
 
     navigate("/result");
@@ -125,7 +144,7 @@ export const Quiz = () => {
   return (
     <div className="mx-auto my-10 p-6 sm:p-10 bg-gray-900 rounded-2xl shadow-2xl max-w-4xl">
       <h1 className="text-3xl sm:text-4xl text-center font-extrabold bg-gradient-to-r from-yellow-400 via-pink-500 to-purple-600 text-transparent bg-clip-text mb-8">
-        {category} Quiz
+        {quizInfo?.title || `${category} Quiz`}
       </h1>
 
       <div className="flex items-center justify-center text-white text-lg mb-6">

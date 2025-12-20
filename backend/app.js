@@ -2,9 +2,11 @@ import express from "express";
 import { createConnection } from "./shared/db/connection.js";
 import dotenv from "dotenv";
 import cors from "cors";
-import { AptitudesModel, CodingRoundModel, HrRoundModel} from "./modules/models/questions-schema.js";
+import { AptitudesModel, CodingRoundModel, HrRoundModel } from "./modules/models/questions-schema.js";
 import { questionRoutes } from "./modules/routes/questions-routes.js";
 import { resultRoutes } from "./modules/routes/result-routes.js";
+import { authRoutes } from "./modules/routes/auth-routes.js";
+import { quizRoutes } from "./modules/routes/quiz-routes.js";
 
 const app = express();
 dotenv.config();
@@ -19,7 +21,7 @@ const allowedOrigins = [
 const corsOptions = {
   origin: function (origin, callback) {
     if (
-      !origin || 
+      !origin ||
       allowedOrigins.includes(origin) ||
       /^https:\/\/quiz-app-git-[\w-]+\.vercel\.app$/.test(origin)
     ) {
@@ -34,6 +36,12 @@ app.use(cors(corsOptions));
 
 
 
+
+// New routes
+app.use("/auth", authRoutes);
+app.use("/quiz", quizRoutes);
+
+// Legacy routes (for backward compatibility)
 app.use("/", questionRoutes);
 app.use("/", resultRoutes);
 
@@ -64,7 +72,7 @@ app.post("/", async (req, res) => {
 
 const promise = createConnection();
 promise.then(() => {
-  const PORT = process.env.PORT || 4444; 
+  const PORT = process.env.PORT || 4444;
   app.listen(PORT, (err) => {
     if (err) {
       console.log("application is not running");

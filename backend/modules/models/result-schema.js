@@ -1,12 +1,24 @@
 import mongoose, { SchemaTypes } from "mongoose";
 
 const resultSchema = mongoose.Schema({
+  userId: {
+    type: SchemaTypes.ObjectId,
+    ref: 'User',
+    required: false // Allow guest users
+  },
+  quizId: {
+    type: SchemaTypes.ObjectId,
+    ref: 'Quiz',
+    required: false // For backward compatibility
+  },
   username: { type: SchemaTypes.String, required: true },
   score: { type: SchemaTypes.Number, required: true },
   attempts: { type: SchemaTypes.Number, required: true },
   status: { type: SchemaTypes.String, required: true },
-  category: { type: SchemaTypes.String, required: true }, 
-  totalQuestions: { type: SchemaTypes.Number, required: true }, 
+  category: { type: SchemaTypes.String, required: true },
+  totalQuestions: { type: SchemaTypes.Number, required: true },
+  correctAnswers: { type: SchemaTypes.Number, default: 0 },
+  incorrectAnswers: { type: SchemaTypes.Number, default: 0 },
   timestamp: { type: SchemaTypes.Date, default: Date.now },
 });
 

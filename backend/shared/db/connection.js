@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 export const createConnection = async () => {
   try {
     const result = await mongoose.connect(
-      "mongodb+srv://janak_luthra:Janakluthra123@cluster0.ftonohe.mongodb.net/test?retryWrites=true&w=majority&appName=Cluster0"
+      process.env.DB_URL || "mongodb+srv://samarlamba65_db_user:JZ5DCMMtVZdH7KA8@cluster0.poxl3ek.mongodb.net/?appName=Cluster0"
     );
     console.log("db connection is done ");
     return result;
