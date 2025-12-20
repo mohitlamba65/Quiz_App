@@ -195,14 +195,8 @@ export const QuizAccess = () => {
                         className="w-full py-4 px-6 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold hover:from-purple-700 hover:to-pink-700 transition-all transform hover:scale-[1.02] flex items-center justify-center gap-2"
                     >
                         <PlayCircle className="w-5 h-5" />
-                        {isAuthenticated ? 'Start Quiz' : 'Login to Start'}
+                        {isAuthenticated ? 'Start Quiz' : 'Login / Guest to Start'}
                     </button>
-
-                    {!isAuthenticated && (
-                        <p className="text-center text-sm text-gray-400">
-                            You need to login or continue as guest to take this quiz
-                        </p>
-                    )}
                 </div>
 
                 <div className="mt-6 p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/20">

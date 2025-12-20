@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from './AuthContext';
 import { LogIn, UserPlus, Sparkles } from 'lucide-react';
 
@@ -9,6 +9,10 @@ export const Login = () => {
     const [loading, setLoading] = useState(false);
     const { login, guestLogin } = useAuth();
     const navigate = useNavigate();
+    const location = useLocation(); // Add this
+
+    // Default to home if no redirect path provided
+    const from = location.state?.from?.pathname || location.state?.from || '/';
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -23,7 +27,7 @@ export const Login = () => {
         const result = await login(formData);
 
         if (result.success) {
-            navigate('/');
+            navigate(from, { replace: true }); // Use redirect path
         } else {
             setError(result.error);
         }
@@ -35,7 +39,7 @@ export const Login = () => {
         const result = await guestLogin();
 
         if (result.success) {
-            navigate('/');
+            navigate(from, { replace: true });
         } else {
             setError(result.error);
         }

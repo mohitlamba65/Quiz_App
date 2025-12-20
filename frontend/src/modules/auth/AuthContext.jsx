@@ -12,7 +12,11 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(null);
+    // Try to load user from localStorage if available
+    const [user, setUser] = useState(() => {
+        const savedUser = localStorage.getItem('user');
+        return savedUser ? JSON.parse(savedUser) : null;
+    });
     const [token, setToken] = useState(localStorage.getItem('token'));
     const [loading, setLoading] = useState(true);
 
@@ -27,19 +31,34 @@ export const AuthProvider = ({ children }) => {
             delete axios.defaults.headers.common['Authorization'];
             localStorage.removeItem('token');
         }
-    }, [token]);
+
+        // Persist user object
+        if (user) {
+            localStorage.setItem('user', JSON.stringify(user));
+        } else {
+            localStorage.removeItem('user');
+        }
+    }, [token, user]);
 
     // Load user on mount
     useEffect(() => {
         const loadUser = async () => {
-            if (token) {
+            // Only fetch from API if we have a token AND it's not a guest user
+            // Guest users are local-only or have a specific token that might not map to /auth/me depending on backend implementation
+            // But if we have a persisted user object, we might not need to re-fetch immediately
+
+            if (token && !user?.isGuest) {
                 try {
                     const response = await axios.get(`${API_URL}/auth/me`);
                     setUser(response.data.user);
                 } catch (error) {
                     console.error('Failed to load user:', error);
-                    setToken(null);
-                    setUser(null);
+                    // Don't auto-logout on network error, only on auth error
+                    // But 401 means invalid token
+                    if (error.response?.status === 401) {
+                        setToken(null);
+                        setUser(null);
+                    }
                 }
             }
             setLoading(false);
@@ -79,7 +98,9 @@ export const AuthProvider = ({ children }) => {
         try {
             const response = await axios.post(`${API_URL}/auth/guest`);
             setToken(response.data.token);
-            setUser(response.data.user);
+            // Ensure isGuest flag is set
+            const guestUser = { ...response.data.user, isGuest: true };
+            setUser(guestUser);
             return { success: true };
         } catch (error) {
             return {
@@ -93,6 +114,7 @@ export const AuthProvider = ({ children }) => {
         setToken(null);
         setUser(null);
         localStorage.removeItem('token');
+        localStorage.removeItem('user');
     };
 
     const value = {
