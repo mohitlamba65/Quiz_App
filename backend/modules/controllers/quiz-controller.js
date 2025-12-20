@@ -43,6 +43,7 @@ export const createQuiz = async (req, res) => {
 export const getQuizByLink = async (req, res) => {
     try {
         const { link } = req.params;
+        const { accessCode } = req.query;
 
         const quiz = await QuizModel.findOne({
             shareableLink: link,
@@ -53,6 +54,23 @@ export const getQuizByLink = async (req, res) => {
             return res.status(404).json({ message: "Quiz not found or inactive" });
         }
 
+        // Check if quiz requires access code
+        if (quiz.accessCode) {
+            if (!accessCode) {
+                return res.status(403).json({
+                    message: "Access code required",
+                    requiresCode: true
+                });
+            }
+
+            if (quiz.accessCode !== accessCode) {
+                return res.status(403).json({
+                    message: "Invalid access code",
+                    requiresCode: true
+                });
+            }
+        }
+
         res.status(200).json({ quiz });
     } catch (error) {
         console.error("Get quiz error:", error);
@@ -60,74 +78,15 @@ export const getQuizByLink = async (req, res) => {
     }
 };
 
-// Get all quizzes created by the admin
-export const getMyQuizzes = async (req, res) => {
-    try {
-        const quizzes = await QuizModel.find({ createdBy: req.user.userId })
-            .sort({ createdAt: -1 })
-            .select('-questions.answer'); // Don't send answers
-
-        res.status(200).json({ quizzes });
-    } catch (error) {
-        console.error("Get my quizzes error:", error);
-        res.status(500).json({ message: error.message });
-    }
-};
-
-// Get all active quizzes (for students)
-export const getAllQuizzes = async (req, res) => {
-    try {
-        const quizzes = await QuizModel.find({ isActive: true })
-            .populate('createdBy', 'username')
-            .sort({ createdAt: -1 })
-            .select('title description category shareableLink createdAt timeLimit passingScore');
-
-        res.status(200).json({ quizzes });
-    } catch (error) {
-        console.error("Get all quizzes error:", error);
-        res.status(500).json({ message: error.message });
-    }
-};
-
-// Update quiz (Admin only)
-export const updateQuiz = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const updates = req.body;
-
-        // Find quiz and check ownership
-        const quiz = await QuizModel.findOne({
-            _id: id,
-            createdBy: req.user.userId
-        });
-
-        if (!quiz) {
-            return res.status(404).json({
-                message: "Quiz not found or you don't have permission to edit it"
-            });
-        }
-
-        // Update quiz
-        Object.assign(quiz, updates);
-        await quiz.save();
-
-        res.status(200).json({
-            message: "Quiz updated successfully",
-            quiz
-        });
-    } catch (error) {
-        console.error("Update quiz error:", error);
-        res.status(500).json({ message: error.message });
-    }
-};
+// ... existing code ...
 
 // Delete quiz (Admin only)
 export const deleteQuiz = async (req, res) => {
     try {
         const { id } = req.params;
 
-        // Find quiz and check ownership
-        const quiz = await QuizModel.findOne({
+        // Find and delete quiz
+        const quiz = await QuizModel.findOneAndDelete({
             _id: id,
             createdBy: req.user.userId
         });
@@ -138,11 +97,7 @@ export const deleteQuiz = async (req, res) => {
             });
         }
 
-        // Soft delete by setting isActive to false
-        quiz.isActive = false;
-        await quiz.save();
-
-        res.status(200).json({ message: "Quiz deleted successfully" });
+        res.status(200).json({ message: "Quiz deleted successfully from database" });
     } catch (error) {
         console.error("Delete quiz error:", error);
         res.status(500).json({ message: error.message });

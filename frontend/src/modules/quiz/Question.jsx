@@ -1,11 +1,11 @@
-export const Question = ({ question, onAnswerChange }) => {
+export const Question = ({ question, onAnswerChange, selectedAnswer }) => {
   console.log("Question data:", question);
-  
+
   // Make sure we have the question object
   if (!question) {
     return <div className="text-white">Loading question...</div>;
   }
-  
+
   const options = [
     question.option1,
     question.option2,
@@ -27,6 +27,7 @@ export const Question = ({ question, onAnswerChange }) => {
               name={`question-${question.questId || question._id}`}
               id={`option${ind}`}
               onChange={onAnswerChange}
+              checked={selectedAnswer === option}
               className="mr-3 h-5 w-5"
             />
             <label

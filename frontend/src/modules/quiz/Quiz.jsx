@@ -153,7 +153,11 @@ export const Quiz = () => {
       </div>
 
       <div className="max-w-2xl mx-auto">
-        <Question question={quizData[currInd]} onAnswerChange={onAnswerChange} />
+        <Question
+          question={quizData[currInd]}
+          onAnswerChange={onAnswerChange}
+          selectedAnswer={userAnswers[currInd]}
+        />
       </div>
 
       <div className="mt-10">
