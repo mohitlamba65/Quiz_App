@@ -118,7 +118,7 @@ export const Quiz = () => {
 
       console.log('Saving result:', resultPayload); // Debug log
 
-      const response = await axios.post(`${API_URL}/result`, resultPayload);
+      const response = await axios.post(`${API_URL}/save-result`, resultPayload);
       console.log('Result saved successfully:', response.data);
     } catch (error) {
       console.error("Error saving result:", error.message);
