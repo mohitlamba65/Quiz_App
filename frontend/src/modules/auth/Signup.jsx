@@ -43,7 +43,9 @@ export const Signup = () => {
         const result = await signup(signupData);
 
         if (result.success) {
-            navigate('/');
+            // Role-based redirect: admins to dashboard, others to home
+            const redirectPath = result.user?.role === 'admin' ? '/admin' : '/';
+            navigate(redirectPath);
         } else {
             setError(result.error);
         }
@@ -151,8 +153,8 @@ export const Signup = () => {
                                 type="button"
                                 onClick={() => setFormData({ ...formData, role: 'student' })}
                                 className={`p-4 rounded-xl border-2 transition-all ${formData.role === 'student'
-                                        ? 'border-purple-500 bg-purple-500/10'
-                                        : 'border-white/10 bg-white/5 hover:border-white/20'
+                                    ? 'border-purple-500 bg-purple-500/10'
+                                    : 'border-white/10 bg-white/5 hover:border-white/20'
                                     }`}
                             >
                                 <GraduationCap className="w-8 h-8 mx-auto mb-2 text-purple-400" />
@@ -162,8 +164,8 @@ export const Signup = () => {
                                 type="button"
                                 onClick={() => setFormData({ ...formData, role: 'admin' })}
                                 className={`p-4 rounded-xl border-2 transition-all ${formData.role === 'admin'
-                                        ? 'border-pink-500 bg-pink-500/10'
-                                        : 'border-white/10 bg-white/5 hover:border-white/20'
+                                    ? 'border-pink-500 bg-pink-500/10'
+                                    : 'border-white/10 bg-white/5 hover:border-white/20'
                                     }`}
                             >
                                 <Shield className="w-8 h-8 mx-auto mb-2 text-pink-400" />

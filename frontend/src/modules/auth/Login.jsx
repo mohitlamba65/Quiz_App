@@ -27,7 +27,9 @@ export const Login = () => {
         const result = await login(formData);
 
         if (result.success) {
-            navigate(from, { replace: true }); // Use redirect path
+            // Role-based redirect: admins to dashboard, others to home
+            const redirectPath = result.user?.role === 'admin' ? '/admin' : '/';
+            navigate(redirectPath, { replace: true });
         } else {
             setError(result.error);
         }
