@@ -4,13 +4,8 @@ import { Question } from "./Question";
 import { useUser } from "../user/User";
 import { useAuth } from "../auth/AuthContext";
 import { Timer } from "lucide-react";
-import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { Question } from "./Question";
-import { useUser } from "../user/User";
-import { useAuth } from "../auth/AuthContext";
-import { Timer } from "lucide-react";
 import api from "../../api";
+
 
 export const Quiz = () => {
   const { category, link } = useParams();
