@@ -4,7 +4,13 @@ import { Question } from "./Question";
 import { useUser } from "../user/User";
 import { useAuth } from "../auth/AuthContext";
 import { Timer } from "lucide-react";
-import axios from "axios";
+import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { Question } from "./Question";
+import { useUser } from "../user/User";
+import { useAuth } from "../auth/AuthContext";
+import { Timer } from "lucide-react";
+import api from "../../api";
 
 export const Quiz = () => {
   const { category, link } = useParams();
@@ -16,14 +22,12 @@ export const Quiz = () => {
   const { userAnswers, updateUserAnswers, userData, updateUserData } = useUser();
   const { user } = useAuth(); // Get authenticated user
 
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4444';
-
   useEffect(() => {
     async function fetchData() {
       try {
         // New link-based quiz access
         if (link) {
-          const response = await axios.get(`${API_URL}/quiz/link/${link}`);
+          const response = await api.get(`/quiz/link/${link}`); // Use api instance
           const quiz = response.data.quiz;
           setQuizInfo(quiz);
           setQuizData(quiz.questions);
@@ -118,7 +122,10 @@ export const Quiz = () => {
 
       console.log('Saving result:', resultPayload); // Debug log
 
-      const response = await axios.post(`${API_URL}/save-result`, resultPayload);
+
+      console.log('Saving result:', resultPayload); // Debug log
+
+      const response = await api.post(`/save-result`, resultPayload);
       console.log('Result saved successfully:', response.data);
     } catch (error) {
       console.error("Error saving result:", error.message);

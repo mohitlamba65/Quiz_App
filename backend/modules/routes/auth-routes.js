@@ -1,12 +1,20 @@
 import express from "express";
-import { signup, login, guestLogin, getCurrentUser } from "../controllers/auth-controller.js";
-import { verifyToken } from "../middleware/auth-middleware.js";
+import {
+    registerUser,
+    loginUser,
+    logoutUser,
+    guestLogin,
+    getCurrentUser,
+    refreshAccessToken
+} from "../controllers/auth-controller.js";
+import { verifyJWT } from "../middleware/auth-middleware.js";
 
-const router = express.Router();
+export const authRoutes = express.Router();
 
-router.post("/signup", signup);
-router.post("/login", login);
-router.post("/guest", guestLogin);
-router.get("/me", verifyToken, getCurrentUser);
-
-export const authRoutes = router;
+authRoutes.post("/signup", registerUser); // map to registerUser for backward compat
+authRoutes.post("/login", loginUser);
+authRoutes.post("/guest", guestLogin);
+authRoutes.post("/logout", verifyJWT, logoutUser);
+authRoutes.post("/refresh-token", refreshAccessToken);
+authRoutes.get("/me", verifyJWT, getCurrentUser);
+authRoutes.get("/current-user", verifyJWT, getCurrentUser); // User's requested route

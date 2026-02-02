@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
-import axios from 'axios';
+import api from '../../api';
 import { PlayCircle, Clock, Award, FileText, Lock } from 'lucide-react';
 
 export const QuizAccess = () => {
     const { link } = useParams();
+    const useNavigateCallback = useNavigate();
     const navigate = useNavigate();
     const { isAuthenticated, user } = useAuth();
     const [quiz, setQuiz] = useState(null);
@@ -15,8 +16,6 @@ export const QuizAccess = () => {
     const [accessCode, setAccessCode] = useState('');
     const [codeError, setCodeError] = useState('');
 
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4444';
-
     useEffect(() => {
         fetchQuiz();
     }, [link]);
@@ -24,10 +23,10 @@ export const QuizAccess = () => {
     const fetchQuiz = async (code = '') => {
         try {
             const url = code
-                ? `${API_URL}/quiz/link/${link}?accessCode=${code}`
-                : `${API_URL}/quiz/link/${link}`;
+                ? `/quiz/link/${link}?accessCode=${code}`
+                : `/quiz/link/${link}`;
 
-            const response = await axios.get(url);
+            const response = await api.get(url);
             setQuiz(response.data.quiz);
             setRequiresCode(false);
             setCodeError('');

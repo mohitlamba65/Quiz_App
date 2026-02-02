@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
-import axios from 'axios';
+import api from '../../api';
 import { Plus, BarChart3, Users, FileText, TrendingUp } from 'lucide-react';
 
 export const AdminDashboard = () => {
@@ -14,20 +14,13 @@ export const AdminDashboard = () => {
     });
     const [loading, setLoading] = useState(true);
 
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4444';
-
     useEffect(() => {
         fetchQuizzes();
     }, []);
 
     const fetchQuizzes = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await axios.get(`${API_URL}/quiz/my-quizzes`, {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
-            });
+            const response = await api.get('/quiz/my-quizzes');
             setQuizzes(response.data.quizzes);
             setStats({
                 totalQuizzes: response.data.quizzes.length,
@@ -45,12 +38,7 @@ export const AdminDashboard = () => {
         if (!confirm('Are you sure you want to delete this quiz?')) return;
 
         try {
-            const token = localStorage.getItem('token');
-            await axios.delete(`${API_URL}/quiz/${quizId}`, {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
-            });
+            await api.delete(`/quiz/${quizId}`);
             alert('Quiz deleted successfully');
             fetchQuizzes();
         } catch (error) {

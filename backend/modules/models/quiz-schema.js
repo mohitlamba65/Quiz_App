@@ -38,7 +38,7 @@ const quizSchema = new mongoose.Schema({
     },
     accessCode: {
         type: String,
-        default: null, // null means public quiz
+        default: null, 
         trim: true
     },
     isActive: {

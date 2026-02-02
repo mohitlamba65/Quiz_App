@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
-import axios from 'axios';
+import api from '../../api';
 import { Plus, Trash2, Save, ArrowLeft, Copy, Check } from 'lucide-react';
 
 export const CreateQuiz = () => {
@@ -28,8 +28,6 @@ export const CreateQuiz = () => {
     const [loading, setLoading] = useState(false);
     const [createdQuiz, setCreatedQuiz] = useState(null);
     const [copied, setCopied] = useState(false);
-
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4444';
 
     const handleQuizChange = (field, value) => {
         setQuizData({ ...quizData, [field]: value });
@@ -75,7 +73,7 @@ export const CreateQuiz = () => {
         setLoading(true);
 
         try {
-            const response = await axios.post(`${API_URL}/quiz/create`, quizData);
+            const response = await api.post('/quiz/create', quizData);
             setCreatedQuiz(response.data.quiz);
         } catch (error) {
             alert(error.response?.data?.message || 'Failed to create quiz');

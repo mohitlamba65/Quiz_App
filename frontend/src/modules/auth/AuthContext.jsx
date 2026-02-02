@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../api';
 
 const AuthContext = createContext();
 
@@ -12,65 +12,28 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }) => {
-    // Try to load user from localStorage if available
-    const [user, setUser] = useState(() => {
-        const savedUser = localStorage.getItem('user');
-        return savedUser ? JSON.parse(savedUser) : null;
-    });
-    const [token, setToken] = useState(localStorage.getItem('token'));
+    const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4444';
-
-    // Set axios default headers
-    useEffect(() => {
-        if (token) {
-            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-            localStorage.setItem('token', token);
-        } else {
-            delete axios.defaults.headers.common['Authorization'];
-            localStorage.removeItem('token');
-        }
-
-        // Persist user object
-        if (user) {
-            localStorage.setItem('user', JSON.stringify(user));
-        } else {
-            localStorage.removeItem('user');
-        }
-    }, [token, user]);
-
-    // Load user on mount
+ 
     useEffect(() => {
         const loadUser = async () => {
-            // Only fetch from API if we have a token AND it's not a guest user
-            // Guest users are local-only or have a specific token that might not map to /auth/me depending on backend implementation
-            // But if we have a persisted user object, we might not need to re-fetch immediately
-
-            if (token && !user?.isGuest) {
-                try {
-                    const response = await axios.get(`${API_URL}/auth/me`);
-                    setUser(response.data.user);
-                } catch (error) {
-                    console.error('Failed to load user:', error);
-                    // Don't auto-logout on network error, only on auth error
-                    // But 401 means invalid token
-                    if (error.response?.status === 401) {
-                        setToken(null);
-                        setUser(null);
-                    }
-                }
+            try {
+                const response = await api.get('/auth/current-user');
+                setUser(response.data.data); 
+            } catch (error) {
+                console.log('No active session');
+                setUser(null);
             }
             setLoading(false);
         };
         loadUser();
-    }, [token, API_URL]);
+    }, []);
 
     const signup = async (userData) => {
         try {
-            const response = await axios.post(`${API_URL}/auth/signup`, userData);
-            setToken(response.data.token);
-            setUser(response.data.user);
+            const response = await api.post('/auth/signup', userData);
+            setUser(response.data.data); 
             return { success: true };
         } catch (error) {
             return {
@@ -82,9 +45,10 @@ export const AuthProvider = ({ children }) => {
 
     const login = async (credentials) => {
         try {
-            const response = await axios.post(`${API_URL}/auth/login`, credentials);
-            setToken(response.data.token);
-            setUser(response.data.user);
+            const response = await api.post('/auth/login', credentials);
+            // Cookies are set automatically by the browser
+            // We just set the user state
+            setUser(response.data.data.user);
             return { success: true };
         } catch (error) {
             return {
@@ -96,11 +60,8 @@ export const AuthProvider = ({ children }) => {
 
     const guestLogin = async () => {
         try {
-            const response = await axios.post(`${API_URL}/auth/guest`);
-            setToken(response.data.token);
-            // Ensure isGuest flag is set
-            const guestUser = { ...response.data.user, isGuest: true };
-            setUser(guestUser);
+            const response = await api.post('/auth/guest');
+            setUser(response.data.data.user);
             return { success: true };
         } catch (error) {
             return {
@@ -110,22 +71,23 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    const logout = () => {
-        setToken(null);
-        setUser(null);
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
+    const logout = async () => {
+        try {
+            await api.post('/auth/logout');
+            setUser(null);
+        } catch (error) {
+            console.error("Logout failed", error);
+        }
     };
 
     const value = {
         user,
-        token,
         loading,
         signup,
         login,
         guestLogin,
         logout,
-        isAuthenticated: !!token,
+        isAuthenticated: !!user,
         isAdmin: user?.role === 'admin',
         isStudent: user?.role === 'student',
         isGuest: user?.isGuest || user?.role === 'guest'

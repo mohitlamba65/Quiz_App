@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
-import axios from 'axios';
+import api from '../../api';
 import { Trophy, Medal, Award, ArrowLeft, Users } from 'lucide-react';
 
 export const QuizLeaderboard = () => {
@@ -11,15 +11,13 @@ export const QuizLeaderboard = () => {
     const [quizInfo, setQuizInfo] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4444';
-
     useEffect(() => {
         fetchLeaderboard();
     }, [id]);
 
     const fetchLeaderboard = async () => {
         try {
-            const response = await axios.get(`${API_URL}/quiz/leaderboard/${id}`);
+            const response = await api.get(`/quiz/leaderboard/${id}`);
             setLeaderboard(response.data.leaderboard);
             setQuizInfo(response.data.quiz);
         } catch (error) {
@@ -131,8 +129,8 @@ export const QuizLeaderboard = () => {
                                             <td className="py-4 px-4 text-center">
                                                 <span
                                                     className={`px-3 py-1 rounded-full text-sm font-medium ${entry.status === 'Passed'
-                                                            ? 'bg-green-500/20 text-green-300'
-                                                            : 'bg-red-500/20 text-red-300'
+                                                        ? 'bg-green-500/20 text-green-300'
+                                                        : 'bg-red-500/20 text-red-300'
                                                         }`}
                                                 >
                                                     {entry.status}

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
+import api from '../../api';
 import AptitudeImg from '../../assets/aptitude_img.jpeg';
 import codingImage from '../../assets/coding_image.jpeg';
 import interviewImage from '../../assets/interview_img.jpeg';
@@ -18,15 +18,13 @@ const MainPage = () => {
   const [quizzes, setQuizzes] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4444';
-
   useEffect(() => {
     fetchQuizzes();
   }, []);
 
   const fetchQuizzes = async () => {
     try {
-      const response = await axios.get(`${API_URL}/quiz/all`);
+      const response = await api.get('/quiz/all');
       setQuizzes(response.data.quizzes);
     } catch (error) {
       console.error('Failed to fetch quizzes:', error);

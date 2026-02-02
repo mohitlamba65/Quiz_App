@@ -1,150 +1,214 @@
 import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
 import { UserModel } from "../models/user-schema.js";
+import { ApiError } from "../../utils/ApiError.js";
+import { ApiResponse } from "../../utils/ApiResponse.js";
+import { asyncHandler } from "../../utils/asyncHandler.js";
 
-// Generate JWT token
-const generateToken = (userId, role, username) => {
-    return jwt.sign(
-        { userId, role, username },
-        process.env.JWT_SECRET,
-        { expiresIn: '7d' }
-    );
-};
-
-// Signup
-export const signup = async (req, res) => {
+const generateAccessAndRefreshTokens = async (userId) => {
     try {
-        const { username, email, password, role } = req.body;
+        const user = await UserModel.findById(userId)
+        const accessToken = user.getAccessToken()
+        const refreshToken = user.getRefreshToken()
+        user.refreshToken = refreshToken;
 
-        // Validation
-        if (!username || !email || !password) {
-            return res.status(400).json({ message: "All fields are required" });
-        }
+        await user.save({ validateBeforeSave: false })
 
-        // Check if user already exists
-        const existingUser = await UserModel.findOne({
-            $or: [{ email }, { username }]
-        });
+        return { accessToken, refreshToken };
 
-        if (existingUser) {
-            return res.status(400).json({
-                message: "User with this email or username already exists"
-            });
-        }
-
-        // Create new user
-        const user = await UserModel.create({
-            username,
-            email,
-            password,
-            role: role || 'student'
-        });
-
-        // Generate token
-        const token = generateToken(user._id, user.role, user.username);
-
-        res.status(201).json({
-            message: "User created successfully",
-            token,
-            user: {
-                id: user._id,
-                username: user.username,
-                email: user.email,
-                role: user.role
-            }
-        });
     } catch (error) {
-        console.error("Signup error:", error);
-        res.status(500).json({ message: error.message });
+        throw new ApiError(500, "Failed to generate tokens", error.message);
     }
-};
+}
 
-// Login
-export const login = async (req, res) => {
-    try {
-        const { email, password } = req.body;
+export const registerUser = asyncHandler(async (req, res) => {
+    const { username, email, password, role, isGuest } = req.body;
 
-        // Validation
-        if (!email || !password) {
-            return res.status(400).json({ message: "Email and password are required" });
-        }
+    if (
+        [username, email, password].some((field) => field?.trim() === "")
+    ) {
+        throw new ApiError(400, "All fields are required");
+    }
 
-        // Find user
-        const user = await UserModel.findOne({ email });
-        if (!user) {
-            return res.status(401).json({ message: "Invalid credentials" });
-        }
+    const existingUser = await UserModel.findOne({
+        $or: [{ username }, { email }]
+    })
 
-        // Check password
-        const isPasswordValid = await user.comparePassword(password);
-        if (!isPasswordValid) {
-            return res.status(401).json({ message: "Invalid credentials" });
-        }
+    if (existingUser) {
+        throw new ApiError(400, "User already exists");
+    }
 
-        // Generate token
-        const token = generateToken(user._id, user.role, user.username);
+    const user = await UserModel.create({
+        username: username.toLowerCase(),
+        email,
+        password,
+        role: role || 'student',
+        isGuest
+    })
 
-        res.status(200).json({
-            message: "Login successful",
-            token,
-            user: {
-                id: user._id,
-                username: user.username,
-                email: user.email,
-                role: user.role
+    const createdUser = await UserModel.findById(user._id).select("-password -refreshToken")
+
+    if (!createdUser) {
+        throw new ApiError(400, "User not found")
+    }
+
+    return res.status(201).json(
+        new ApiResponse(200, "User registered successfully", createdUser)
+    )
+})
+
+export const loginUser = asyncHandler(async (req, res) => {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+        throw new ApiError(400, "Email and password are required");
+    }
+
+    const user = await UserModel.findOne({ email });
+
+    if (!user) {
+        throw new ApiError(404, "User not found");
+    }
+
+    const isPasswordValid = await user.comparePassword(password)
+
+    if (!isPasswordValid) {
+        throw new ApiError(401, "Invalid credentials");
+    }
+
+    const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id);
+
+    const options = {
+        httpOnly: true,
+        secure: true, 
+        sameSite: "none", 
+        maxAge: 24 * 60 * 60 * 1000
+    }
+
+    const loggedInUser = await UserModel.findById(user._id).select("-password -refreshToken");
+
+    return res
+        .status(200)
+        .cookie("accessToken", accessToken, options)
+        .cookie("refreshToken", refreshToken, options)
+        .json(
+            new ApiResponse(200, "Login Successful", {
+                user: loggedInUser,
+                accessToken,
+                refreshToken
+            })
+        )
+})
+
+export const logoutUser = asyncHandler(async (req, res) => {
+    await UserModel.findByIdAndUpdate(
+        req.user._id,
+        {
+            $unset: {
+                refreshToken: 1
             }
-        });
-    } catch (error) {
-        console.error("Login error:", error);
-        res.status(500).json({ message: error.message });
+        },
+        {
+            new: true
+        }
+    )
+
+    const options = {
+        httpOnly: true,
+        secure: true,
+        sameSite: "none"
     }
-};
 
-// Guest login
-export const guestLogin = async (req, res) => {
+    return res
+        .status(200)
+        .clearCookie("accessToken", options)
+        .clearCookie("refreshToken", options)
+        .json(new ApiResponse(200, "Logged out successfully", {}))
+})
+
+export const refreshAccessToken = asyncHandler(async (req, res) => {
+    const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken;
+    if (!incomingRefreshToken) {
+        throw new ApiError(401, "Unauthorized request");
+    }
     try {
-        const guestId = `guest_${Date.now()}`;
-        const guestUsername = `Guest_${Math.random().toString(36).substring(7)}`;
-
-        // Generate temporary token for guest
-        const token = jwt.sign(
-            {
-                userId: guestId,
-                role: 'guest',
-                username: guestUsername,
-                isGuest: true
-            },
-            process.env.JWT_SECRET,
-            { expiresIn: '24h' }
+        const decodedToken = jwt.verify(
+            incomingRefreshToken,
+            process.env.REFRESH_TOKEN_SECRET
         );
 
-        res.status(200).json({
-            message: "Guest session created",
-            token,
-            user: {
-                id: guestId,
-                username: guestUsername,
-                role: 'guest',
-                isGuest: true
-            }
-        });
-    } catch (error) {
-        console.error("Guest login error:", error);
-        res.status(500).json({ message: error.message });
-    }
-};
-
-// Get current user
-export const getCurrentUser = async (req, res) => {
-    try {
-        const user = await UserModel.findById(req.user.userId).select('-password');
-
+        const user = await UserModel.findById(decodedToken?._id);
         if (!user) {
-            return res.status(404).json({ message: "User not found" });
+            throw new ApiError(404, "User not found");
         }
 
-        res.status(200).json({ user });
+        if (incomingRefreshToken !== user.refreshToken) {
+            throw new ApiError(401, "Refresh token does not match");
+        }
+
+        const { accessToken, refreshToken: newRefreshToken } = await generateAccessAndRefreshTokens(user._id);
+        const options = {
+            httpOnly: true,
+            secure: true,
+            sameSite: "none"
+        }
+
+        return res
+            .status(200)
+            .cookie("accessToken", accessToken, options)
+            .cookie("refreshToken", newRefreshToken, options)
+            .json(new ApiResponse(200, "Access token refreshed successfully", {
+                accessToken,
+                refreshToken: newRefreshToken
+            }))
     } catch (error) {
-        console.error("Get user error:", error);
-        res.status(500).json({ message: error.message });
+        throw new ApiError(401, error?.message || "Invalid refresh token");
     }
-};
+})
+
+export const getCurrentUser = asyncHandler(async (req, res) => {
+    return res
+        .status(200)
+        .json(new ApiResponse(200, "User fetched successfully", req.user));
+})
+
+// Guest login adapted to new structure
+export const guestLogin = asyncHandler(async (req, res) => {
+    const guestId = new mongoose.Types.ObjectId(); // We need a valid Object ID even fake
+    // Better to actually create a temporary guest user in DB to support result constraints if needed
+    // Or just bypass database for full guest mode if schema allows.
+    // For now, let's create a real temporary user marked as guest
+
+    // Actually, simplest is to just sign a token that has isGuest: true
+    // But generateAccessAndRefreshTokens expects a DB user.
+    // Let's create a temporary guest user in DB
+    const username = `Guest_${Math.random().toString(36).substring(7)}`;
+
+    const user = await UserModel.create({
+        username,
+        email: `${username}@guest.com`,
+        password: `guest_${Date.now()}`, // Random password
+        role: 'guest',
+        isGuest: true
+    });
+
+    const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id);
+
+    const options = {
+        httpOnly: true,
+        secure: true,
+        sameSite: "none"
+    }
+
+    return res
+        .status(200)
+        .cookie("accessToken", accessToken, options)
+        .cookie("refreshToken", refreshToken, options)
+        .json(
+            new ApiResponse(200, "Guest session created", {
+                user: { ...user.toObject(), password: undefined, refreshToken: undefined },
+                accessToken,
+                refreshToken
+            })
+        )
+})
