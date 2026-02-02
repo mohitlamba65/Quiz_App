@@ -15,12 +15,12 @@ export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
- 
+
     useEffect(() => {
         const loadUser = async () => {
             try {
                 const response = await api.get('/auth/current-user');
-                setUser(response.data.data); 
+                setUser(response.data.data);
             } catch (error) {
                 console.log('No active session');
                 setUser(null);
@@ -33,8 +33,9 @@ export const AuthProvider = ({ children }) => {
     const signup = async (userData) => {
         try {
             const response = await api.post('/auth/signup', userData);
-            setUser(response.data.data); 
-            return { success: true };
+            const user = response.data.data;
+            setUser(user);
+            return { success: true, user };
         } catch (error) {
             return {
                 success: false,
@@ -43,14 +44,23 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+
     const login = async (credentials) => {
         try {
+            console.log('🌐 Sending login request to backend...');
             const response = await api.post('/auth/login', credentials);
+            console.log('📦 Backend response:', response.data);
+            console.log('📦 response.data.data:', response.data.data);
+
             // Cookies are set automatically by the browser
             // We just set the user state
-            setUser(response.data.data.user);
-            return { success: true };
+            // Backend returns: { statusCode, message, data: { user, accessToken, refreshToken } }
+            const user = response.data.data?.user || response.data.data;
+            console.log('👤 Extracted user:', user);
+            setUser(user);
+            return { success: true, user };
         } catch (error) {
+            console.error('🚨 Login error:', error.response?.data || error.message);
             return {
                 success: false,
                 error: error.response?.data?.message || 'Login failed'

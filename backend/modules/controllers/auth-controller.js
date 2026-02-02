@@ -53,7 +53,7 @@ export const registerUser = asyncHandler(async (req, res) => {
     }
 
     return res.status(201).json(
-        new ApiResponse(200, "User registered successfully", createdUser)
+        new ApiResponse(200, createdUser, "User registered successfully")
     )
 })
 
@@ -80,8 +80,8 @@ export const loginUser = asyncHandler(async (req, res) => {
 
     const options = {
         httpOnly: true,
-        secure: true, 
-        sameSite: "none", 
+        secure: true,
+        sameSite: "none",
         maxAge: 24 * 60 * 60 * 1000
     }
 
@@ -92,11 +92,11 @@ export const loginUser = asyncHandler(async (req, res) => {
         .cookie("accessToken", accessToken, options)
         .cookie("refreshToken", refreshToken, options)
         .json(
-            new ApiResponse(200, "Login Successful", {
+            new ApiResponse(200, {
                 user: loggedInUser,
                 accessToken,
                 refreshToken
-            })
+            }, "Login Successful")
         )
 })
 
@@ -205,10 +205,10 @@ export const guestLogin = asyncHandler(async (req, res) => {
         .cookie("accessToken", accessToken, options)
         .cookie("refreshToken", refreshToken, options)
         .json(
-            new ApiResponse(200, "Guest session created", {
+            new ApiResponse(200, {
                 user: { ...user.toObject(), password: undefined, refreshToken: undefined },
                 accessToken,
                 refreshToken
-            })
+            }, "Guest session created")
         )
 })

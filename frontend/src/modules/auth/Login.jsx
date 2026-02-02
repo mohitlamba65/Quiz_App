@@ -9,9 +9,8 @@ export const Login = () => {
     const [loading, setLoading] = useState(false);
     const { login, guestLogin } = useAuth();
     const navigate = useNavigate();
-    const location = useLocation(); // Add this
+    const location = useLocation();
 
-    // Default to home if no redirect path provided
     const from = location.state?.from?.pathname || location.state?.from || '/';
 
     const handleChange = (e) => {
@@ -27,7 +26,6 @@ export const Login = () => {
         const result = await login(formData);
 
         if (result.success) {
-            // Role-based redirect: admins to dashboard, others to home
             const redirectPath = result.user?.role === 'admin' ? '/admin' : '/';
             navigate(redirectPath, { replace: true });
         } else {
