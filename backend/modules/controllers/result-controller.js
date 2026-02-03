@@ -24,7 +24,6 @@ export const getResults = async (req, res) => {
   }
 };
 
-// Get results for a specific user
 export const getUserResults = async (req, res) => {
   try {
     const { userId } = req.params;

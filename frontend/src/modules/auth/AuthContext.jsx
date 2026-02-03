@@ -47,20 +47,11 @@ export const AuthProvider = ({ children }) => {
 
     const login = async (credentials) => {
         try {
-            console.log('🌐 Sending login request to backend...');
             const response = await api.post('/auth/login', credentials);
-            console.log('📦 Backend response:', response.data);
-            console.log('📦 response.data.data:', response.data.data);
-
-            // Cookies are set automatically by the browser
-            // We just set the user state
-            // Backend returns: { statusCode, message, data: { user, accessToken, refreshToken } }
             const user = response.data.data?.user || response.data.data;
-            console.log('👤 Extracted user:', user);
             setUser(user);
             return { success: true, user };
         } catch (error) {
-            console.error('🚨 Login error:', error.response?.data || error.message);
             return {
                 success: false,
                 error: error.response?.data?.message || 'Login failed'
@@ -100,7 +91,7 @@ export const AuthProvider = ({ children }) => {
         isAuthenticated: !!user,
         isAdmin: user?.role === 'admin',
         isStudent: user?.role === 'student',
-        isGuest: user?.isGuest || user?.role === 'guest'
+        isGuest: user?.role === 'guest'
     };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

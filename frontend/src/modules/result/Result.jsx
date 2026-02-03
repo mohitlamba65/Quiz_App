@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
 import { Trophy, Award, Target, Clock, CheckCircle, XCircle, Home } from "lucide-react";
 
-const COLORS = ["#10b981", "#ef4444"]; // Green for correct, Red for incorrect
+const COLORS = ["#10b981", "#ef4444"];
 
 export const Result = () => {
   const { userData } = useUser();

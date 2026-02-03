@@ -26,7 +26,6 @@ export const Signup = () => {
         setLoading(true);
         setError('');
 
-        // Validation
         if (formData.password !== formData.confirmPassword) {
             setError('Passwords do not match');
             setLoading(false);
@@ -43,7 +42,6 @@ export const Signup = () => {
         const result = await signup(signupData);
 
         if (result.success) {
-            // Role-based redirect: admins to dashboard, others to home
             const redirectPath = result.user?.role === 'admin' ? '/admin' : '/';
             navigate(redirectPath);
         } else {
@@ -54,14 +52,12 @@ export const Signup = () => {
 
     return (
         <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
-            {/* Animated Background */}
             <div className="absolute inset-0 overflow-hidden">
                 <div className="absolute top-20 left-20 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
                 <div className="absolute bottom-20 right-20 w-72 h-72 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" style={{ animationDelay: '1s' }}></div>
                 <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-72 h-72 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" style={{ animationDelay: '2s' }}></div>
             </div>
 
-            {/* Signup Card */}
             <div className="glass-strong rounded-3xl p-8 md:p-12 w-full max-w-md relative z-10 animate-fade-in">
                 <div className="text-center mb-8">
                     <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 mb-4 animate-glow">
@@ -91,7 +87,7 @@ export const Signup = () => {
                             required
                             minLength={3}
                             className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                            placeholder="johndoe"
+                            placeholder="example123"
                         />
                     </div>
 

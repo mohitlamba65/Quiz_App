@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from './AuthContext';
 import { LogIn, UserPlus, Sparkles } from 'lucide-react';
 
@@ -9,9 +9,6 @@ export const Login = () => {
     const [loading, setLoading] = useState(false);
     const { login, guestLogin } = useAuth();
     const navigate = useNavigate();
-    const location = useLocation();
-
-    const from = location.state?.from?.pathname || location.state?.from || '/';
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -39,7 +36,7 @@ export const Login = () => {
         const result = await guestLogin();
 
         if (result.success) {
-            navigate(from, { replace: true });
+            navigate('/', { replace: true });
         } else {
             setError(result.error);
         }
@@ -48,14 +45,13 @@ export const Login = () => {
 
     return (
         <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
-            {/* Animated Background */}
+
             <div className="absolute inset-0 overflow-hidden">
                 <div className="absolute top-20 left-20 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
                 <div className="absolute bottom-20 right-20 w-72 h-72 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" style={{ animationDelay: '1s' }}></div>
                 <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-72 h-72 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" style={{ animationDelay: '2s' }}></div>
             </div>
 
-            {/* Login Card */}
             <div className="glass-strong rounded-3xl p-8 md:p-12 w-full max-w-md relative z-10 animate-fade-in">
                 <div className="text-center mb-8">
                     <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 mb-4 animate-glow">

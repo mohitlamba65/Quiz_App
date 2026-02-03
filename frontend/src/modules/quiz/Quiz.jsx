@@ -15,12 +15,12 @@ export const Quiz = () => {
   const [timeLeft, setTimeLeft] = useState(0);
   const navigate = useNavigate();
   const { userAnswers, updateUserAnswers, userData, updateUserData } = useUser();
-  const { user } = useAuth(); // Get authenticated user
+  const { user } = useAuth();
 
   useEffect(() => {
     async function fetchData() {
       try {
-        // New link-based quiz access
+
         if (link) {
           const response = await api.get(`/quiz/link/${link}`); // Use api instance
           const quiz = response.data.quiz;
@@ -28,18 +28,8 @@ export const Quiz = () => {
           setQuizData(quiz.questions);
           setTimeLeft(quiz.timeLimit);
         }
-        // Legacy category-based access
-        else if (category) {
-          const response = await fetch(import.meta.env.VITE_QUESTIONS_URL);
-          const result = await response.json();
 
-          const categoryData = result.filter((item) =>
-            item.category?.toLowerCase() === category?.toLowerCase()
-          );
 
-          setQuizData(categoryData);
-          setTimeLeft(categoryData.length * 60);
-        }
       } catch (error) {
         console.error("Error fetching data:", error);
       }
@@ -112,10 +102,10 @@ export const Quiz = () => {
         incorrectAnswers: attemptedCount - correctCount,
         totalQuestions: quizData.length,
         quizId: quizInfo?._id || null,
-        userId: user?._id || null // Use authenticated user ID
+        userId: user?._id || null
       };
 
-      console.log('Saving result:', resultPayload); // Debug log
+      console.log('Saving result:', resultPayload);
 
 
       console.log('Saving result:', resultPayload); // Debug log

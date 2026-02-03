@@ -46,7 +46,7 @@ const quizSchema = new mongoose.Schema({
         default: true
     },
     timeLimit: {
-        type: Number, // in seconds
+        type: Number, 
         default: 3600 // 1 hour default
     },
     passingScore: {
@@ -63,7 +63,6 @@ const quizSchema = new mongoose.Schema({
     }
 });
 
-// Update the updatedAt timestamp before saving
 quizSchema.pre('save', function (next) {
     this.updatedAt = Date.now();
     next();

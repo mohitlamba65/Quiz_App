@@ -22,7 +22,7 @@ const generateAccessAndRefreshTokens = async (userId) => {
 }
 
 export const registerUser = asyncHandler(async (req, res) => {
-    const { username, email, password, role, isGuest } = req.body;
+    const { username, email, password, role} = req.body;
 
     if (
         [username, email, password].some((field) => field?.trim() === "")
@@ -43,7 +43,6 @@ export const registerUser = asyncHandler(async (req, res) => {
         email,
         password,
         role: role || 'student',
-        isGuest
     })
 
     const createdUser = await UserModel.findById(user._id).select("-password -refreshToken")
@@ -172,24 +171,15 @@ export const getCurrentUser = asyncHandler(async (req, res) => {
         .json(new ApiResponse(200, "User fetched successfully", req.user));
 })
 
-// Guest login adapted to new structure
-export const guestLogin = asyncHandler(async (req, res) => {
-    const guestId = new mongoose.Types.ObjectId(); // We need a valid Object ID even fake
-    // Better to actually create a temporary guest user in DB to support result constraints if needed
-    // Or just bypass database for full guest mode if schema allows.
-    // For now, let's create a real temporary user marked as guest
 
-    // Actually, simplest is to just sign a token that has isGuest: true
-    // But generateAccessAndRefreshTokens expects a DB user.
-    // Let's create a temporary guest user in DB
+export const guestLogin = asyncHandler(async (req, res) => {
     const username = `Guest_${Math.random().toString(36).substring(7)}`;
 
     const user = await UserModel.create({
         username,
         email: `${username}@guest.com`,
-        password: `guest_${Date.now()}`, // Random password
+        password: `guest_${Date.now()}`,
         role: 'guest',
-        isGuest: true
     });
 
     const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id);

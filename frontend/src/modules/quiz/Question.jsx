@@ -1,7 +1,6 @@
 export const Question = ({ question, onAnswerChange, selectedAnswer }) => {
   console.log("Question data:", question);
 
-  // Make sure we have the question object
   if (!question) {
     return <div className="text-white">Loading question...</div>;
   }

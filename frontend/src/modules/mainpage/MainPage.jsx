@@ -14,6 +14,7 @@ const categoryImages = {
   'Programming': codingImage
 };
 
+
 const MainPage = () => {
   const [quizzes, setQuizzes] = useState([]);
   const [loading, setLoading] = useState(true);

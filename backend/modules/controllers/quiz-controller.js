@@ -1,25 +1,23 @@
 import { QuizModel } from "../models/quiz-schema.js";
 
-// Create a new quiz (Admin only)
 export const createQuiz = async (req, res) => {
     try {
         const { title, description, category, questions, timeLimit, passingScore } = req.body;
 
-        // Validation
+       
         if (!title || !category || !questions || questions.length === 0) {
             return res.status(400).json({
                 message: "Title, category, and at least one question are required"
             });
         }
 
-        // Create quiz
         const quiz = await QuizModel.create({
             title,
             description,
             category,
             questions,
             createdBy: req.user.userId,
-            timeLimit: timeLimit || questions.length * 60, // 1 min per question default
+            timeLimit: timeLimit || questions.length * 60,
             passingScore: passingScore || 50
         });
 
@@ -39,7 +37,6 @@ export const createQuiz = async (req, res) => {
     }
 };
 
-// Get quiz by shareable link
 export const getQuizByLink = async (req, res) => {
     try {
         const { link } = req.params;
@@ -54,7 +51,6 @@ export const getQuizByLink = async (req, res) => {
             return res.status(404).json({ message: "Quiz not found or inactive" });
         }
 
-        // Check if quiz requires access code
         if (quiz.accessCode) {
             if (!accessCode) {
                 return res.status(403).json({
@@ -78,12 +74,11 @@ export const getQuizByLink = async (req, res) => {
     }
 };
 
-// Get all quizzes created by the admin
 export const getMyQuizzes = async (req, res) => {
     try {
         const quizzes = await QuizModel.find({ createdBy: req.user.userId })
             .sort({ createdAt: -1 })
-            .select('-questions.answer'); // Don't send answers
+            .select('-questions.answer');
 
         res.status(200).json({ quizzes });
     } catch (error) {
@@ -92,7 +87,6 @@ export const getMyQuizzes = async (req, res) => {
     }
 };
 
-// Get all active quizzes (for students)
 export const getAllQuizzes = async (req, res) => {
     try {
         const quizzes = await QuizModel.find({ isActive: true })
@@ -107,13 +101,12 @@ export const getAllQuizzes = async (req, res) => {
     }
 };
 
-// Update quiz (Admin only)
+
 export const updateQuiz = async (req, res) => {
     try {
         const { id } = req.params;
         const updates = req.body;
 
-        // Find quiz and check ownership
         const quiz = await QuizModel.findOne({
             _id: id,
             createdBy: req.user.userId
@@ -125,7 +118,6 @@ export const updateQuiz = async (req, res) => {
             });
         }
 
-        // Update quiz
         Object.assign(quiz, updates);
         await quiz.save();
 
@@ -139,12 +131,10 @@ export const updateQuiz = async (req, res) => {
     }
 };
 
-// Delete quiz (Admin only)
 export const deleteQuiz = async (req, res) => {
     try {
         const { id } = req.params;
 
-        // Find and delete quiz
         const quiz = await QuizModel.findOneAndDelete({
             _id: id,
             createdBy: req.user.userId
@@ -163,7 +153,6 @@ export const deleteQuiz = async (req, res) => {
     }
 };
 
-// Get quiz statistics (Admin only)
 export const getQuizStats = async (req, res) => {
     try {
         const { id } = req.params;
@@ -177,7 +166,6 @@ export const getQuizStats = async (req, res) => {
             return res.status(404).json({ message: "Quiz not found" });
         }
 
-        // Import ResultModel here to avoid circular dependency
         const { ResultModel } = await import("../models/result-schema.js");
 
         const results = await ResultModel.find({ quizId: id });
@@ -199,7 +187,6 @@ export const getQuizStats = async (req, res) => {
     }
 };
 
-// Get quiz leaderboard (Admin only)
 export const getQuizLeaderboard = async (req, res) => {
     try {
         const { id } = req.params;
@@ -217,8 +204,8 @@ export const getQuizLeaderboard = async (req, res) => {
 
         const results = await ResultModel.find({ quizId: id })
             .populate('userId', 'username email')
-            .sort({ score: -1, timestamp: 1 }) // Sort by score descending, then by time ascending
-            .limit(100); // Top 100 attempts
+            .sort({ score: -1, timestamp: 1 })
+            .limit(100);
 
         const leaderboard = results.map((result, index) => ({
             rank: index + 1,
